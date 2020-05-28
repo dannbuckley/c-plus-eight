@@ -1,0 +1,1 @@
+Copyright © 1996 - 2020 Zophar's Domain, all rights reserved.
