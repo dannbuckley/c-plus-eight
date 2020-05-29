@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     catch (spdlog::spdlog_ex& e) {
         std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
-    }
+    } // end try-catch
 
 #ifdef PRINT_OPCODES
     spdlog::set_level(spdlog::level::debug);
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     std::unique_ptr<c_plus_eight::Chip8> emu = std::make_unique<c_plus_eight::Chip8>();
     if (!emu->load_game("c8games/INVADERS")) {
         return EXIT_FAILURE;
-    }
+    } // end if (!emu->load_game)
 
     // main display loop
     try {
@@ -100,11 +100,11 @@ int main(int argc, char* argv[])
                     default:
                         // invalid key pressed, ignore event
                         break;
-                    }
+                    } // end switch (e.key.keysym.sym)
 
                     if (key != 0xFF) {
                         emu->key_press(key);
-                    }
+                    } // end if (key != 0xFF)
                 }
                 else if (e.type == SDL_KEYUP) {
                     uint8_t key = 0xFF;
@@ -167,13 +167,13 @@ int main(int argc, char* argv[])
                     default:
                         // invalid key released, ignore event
                         break;
-                    }
+                    } // end switch (e.key.keysym.sym)
 
                     if (key != 0xFF) {
                         emu->key_release(key);
-                    }
-                }
-            }
+                    } // end if (key != 0xFF)
+                } // end if (e.type == SDL_KEYUP)
+            } // end while (SDL_PollEvent != 0)
 
             emu->emulate_cycle();
 
@@ -181,15 +181,13 @@ int main(int argc, char* argv[])
             auto n_time = SDL_GetTicks();
             if ((n_time - s_time) >= 17) {
                 emu->tick();
-            }
-        }
+            } // end if (n_time - s_time >= REFRESH_RATE)
+        } // end while (active)
     }
-    catch (c_plus_eight::unknown_opcode_error& e) {
+    catch (std::exception& e) {
         std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
-    }
-
-    emu->stop_emulation();
+    } // end try-catch
 
     return EXIT_SUCCESS;
 }

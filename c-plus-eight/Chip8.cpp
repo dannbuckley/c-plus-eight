@@ -10,10 +10,10 @@
 namespace c_plus_eight {
 	void Chip8::display_sprite(uint8_t x, uint8_t y, uint8_t n)
 	{
-		uint8_t row = y, col = x;
-		
 		// set collision flag to 0
 		this->V[0xF] = 0;
+
+		// render sprite at memory location I
 		for (uint8_t byte_index = 0; byte_index < n; byte_index++) {
 			uint8_t byte = this->memory[I + byte_index];
 
@@ -21,18 +21,25 @@ namespace c_plus_eight {
 				uint8_t bit = (byte >> bit_index) & 0x1;
 				
 				// calculate current row and column as it would appear in OpenGL
-				uint8_t cur_row = SCREEN_ROWS - (((row + byte_index) % SCREEN_ROWS) + 1);
-				uint8_t cur_col = (col + (7 - bit_index)) % SCREEN_COLS;
+				uint8_t cur_row = SCREEN_ROWS - (((y + byte_index) % SCREEN_ROWS) + 1);
+				uint8_t cur_col = (x + (7 - bit_index)) % SCREEN_COLS;
+
+				// get pointer to current pixel
 				uint8_t* pixelp = &this->graphics[(cur_row * SCREEN_COLS) + cur_col];
-				if ((bit == 1) && (*pixelp == 0xFF)) {
-					this->V[0xF] = 1;
-				}
+
 				if (bit) {
+					// detect collision
+					if (*pixelp == 0xFF) {
+						this->V[0xF] = 1;
+					} // end if (*pixelp == 0xFF)
+
+					// toggle current pixel (use 0xFF for full luminance)
 					*pixelp ^= 0xFF;
-				}
+				} // end if (bit)
+
 				pixelp = NULL;
-			}
-		}
+			} // end for (bit_index)
+		} // end for (byte_index)
 	}
 
 	bool Chip8::load_game(const char* file_path)
@@ -43,7 +50,7 @@ namespace c_plus_eight {
 		if (game == NULL) {
 			spdlog::get("logger")->error("Could not open file '{}'.", file_path);
 			return false;
-		}
+		} // end if
 
 		// read in game data and store in memory at 0x200
 		fread(&this->memory[0x200], 1, 4096 - 512, game);
@@ -64,7 +71,7 @@ namespace c_plus_eight {
 
 	void Chip8::emulate_cycle()
 	{
-		// retrieve opcode from memory
+		// retrieve opcode from current memory position
 		this->opcode = (this->memory[this->pc] << 8) | this->memory[this->pc + 1];
 
 		// dissect opcode
@@ -95,16 +102,13 @@ namespace c_plus_eight {
 #endif
 				// return from a subroutine
 				this->pc = this->stack[--this->sp];
-
-				// stack.pop()
-				// --this->sp;
 				NEXT_INSTRUCTION;
 				break;
 
 			default:
-				spdlog::get("logger")->error("Unknown opcode: 0x{}", this->opcode);
+				spdlog::get("logger")->error("Unknown opcode: {}", this->opcode);
 				throw unknown_opcode_error();
-			}
+			} // end switch (kk)
 			break;
 		case 0x1000: // JP addr
 #ifdef PRINT_OPCODES
@@ -120,7 +124,6 @@ namespace c_plus_eight {
 #endif
 			// call subroutine at nnn
 			// place program counter at the top of the stack
-			// stack.push(pc)
 			this->stack[this->sp] = this->pc;
 
 			// increment stack pointer
@@ -137,7 +140,7 @@ namespace c_plus_eight {
 			// skip next instruction if Vx == byte
 			if (this->V[x] == kk) {
 				NEXT_INSTRUCTION;
-			}
+			} // end if
 
 			NEXT_INSTRUCTION;
 			break;
@@ -149,7 +152,7 @@ namespace c_plus_eight {
 			// skip next instruction if Vx != byte
 			if (this->V[x] != kk) {
 				NEXT_INSTRUCTION;
-			}
+			} // end if
 
 			NEXT_INSTRUCTION;
 			break;
@@ -161,7 +164,7 @@ namespace c_plus_eight {
 			// skip next instruction if Vx == Vy
 			if (this->V[x] == this->V[y]) {
 				NEXT_INSTRUCTION;
-			}
+			} // end if
 
 			NEXT_INSTRUCTION;
 			break;
@@ -228,7 +231,7 @@ namespace c_plus_eight {
 				}
 				else {
 					this->V[0xF] = 0;
-				}
+				} // end if
 
 				this->V[x] += this->V[y];
 				break;
@@ -243,7 +246,7 @@ namespace c_plus_eight {
 				}
 				else {
 					this->V[0xF] = 0;
-				}
+				} // end if
 
 				this->V[x] -= this->V[y];
 				break;
@@ -267,7 +270,7 @@ namespace c_plus_eight {
 				}
 				else {
 					this->V[0xF] = 0;
-				}
+				} // end if
 
 				this->V[x] = this->V[y] - this->V[x];
 				break;
@@ -284,7 +287,7 @@ namespace c_plus_eight {
 			default:
 				spdlog::get("logger")->error("Unknown opcode: {}", this->opcode);
 				throw unknown_opcode_error();
-			}
+			} // end switch (n)
 			NEXT_INSTRUCTION;
 			break;
 
@@ -295,7 +298,7 @@ namespace c_plus_eight {
 			// skip next instruction if Vx != Vy
 			if (this->V[x] != this->V[y]) {
 				NEXT_INSTRUCTION;
-			}
+			} // end if
 
 			NEXT_INSTRUCTION;
 			break;
@@ -345,7 +348,7 @@ namespace c_plus_eight {
 				// skip next instruction if key with the value of Vx is pressed
 				if (this->key[this->V[x]]) {
 					NEXT_INSTRUCTION;
-				}
+				} // end if
 				break;
 
 			case 0xA1: // SKNP Vx
@@ -355,13 +358,13 @@ namespace c_plus_eight {
 				// skip next instruction if key with the value of Vx is not pressed
 				if (!this->key[this->V[x]]) {
 					NEXT_INSTRUCTION;
-				}
+				} // end if
 				break;
 
 			default:
 				spdlog::get("logger")->error("Unknown opcode: {}", this->opcode);
 				throw unknown_opcode_error();
-			}
+			} // end switch (kk)
 			NEXT_INSTRUCTION;
 			break;
 
@@ -386,8 +389,8 @@ namespace c_plus_eight {
 						this->V[x] = i;
 						NEXT_INSTRUCTION;
 						break;
-					}
-				}
+					} // end if
+				} // end for
 				break;
 
 			case 0x15: // LD DT, Vx
@@ -446,6 +449,7 @@ namespace c_plus_eight {
 					std::next(this->V.begin(), x + 1),
 					std::next(this->memory.begin(), I));
 
+				// advance I by the number of bytes stored
 				this->I += x + 1;
 				NEXT_INSTRUCTION;
 				break;
@@ -459,6 +463,7 @@ namespace c_plus_eight {
 					std::next(this->memory.begin(), I + x + 1),
 					this->V.begin());
 
+				// advance I by the number of bytes read
 				this->I += x + 1;
 				NEXT_INSTRUCTION;
 				break;
@@ -466,34 +471,30 @@ namespace c_plus_eight {
 			default:
 				spdlog::get("logger")->error("Unknown opcode: {}", this->opcode);
 				throw unknown_opcode_error();
-			}
+			} // end switch (kk)
 			break;
 		default:
 			spdlog::get("logger")->error("Unknown opcode: {}", this->opcode);
 			throw unknown_opcode_error();
-		}
+		} // end switch (opcode & 0xF000)
 
 		if (this->update_screen) {
-			r.draw(&this->graphics);
+			r->draw(&this->graphics);
 			this->update_screen = false;
-		}
+		} // end if (update_screen)
 	}
+
 	void Chip8::tick()
 	{
 		if (this->delay_timer > 0) {
 			--this->delay_timer;
-		}
+		} // end if (delay_timer > 0)
 
 		if (this->sound_timer > 0) {
 			--sound_timer;
 			if (this->sound_timer == 0) {
 				spdlog::get("logger")->info("Sound timer reached 0.");
-			}
-		}
-	}
-
-	void Chip8::stop_emulation()
-	{
-		this->r.quit();
+			} // end if (sound_timer == 0)
+		} // end if (sound_timer > 0)
 	}
 }

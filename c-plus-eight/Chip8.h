@@ -10,8 +10,8 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <exception>
 #include <iterator>
+#include <memory>
 #include <random>
 
 #include "Renderer.h"
@@ -64,6 +64,7 @@ namespace c_plus_eight {
         uint16_t I = 0;
         uint16_t pc = 0x200;
         std::array<uint8_t, SCREEN_ROWS * SCREEN_COLS> graphics = {};
+
         uint8_t delay_timer = 0;
         uint8_t sound_timer = 0;
 
@@ -75,12 +76,13 @@ namespace c_plus_eight {
 
         bool update_screen = true;
 
-        Renderer r;
+        std::unique_ptr<Renderer> r;
 
         void display_sprite(uint8_t x, uint8_t y, uint8_t n);
 
     public:
         Chip8() {
+            this->r = std::make_unique<Renderer>();
             std::copy(std::begin(fontset), std::end(fontset), std::begin(this->memory));
         }
 
@@ -89,6 +91,5 @@ namespace c_plus_eight {
         void key_release(uint8_t key_val);
         void emulate_cycle();
         void tick();
-        void stop_emulation();
     };
 }

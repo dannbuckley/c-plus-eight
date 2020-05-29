@@ -46,7 +46,6 @@ namespace c_plus_eight {
 		}
 
 		// initialize GLEW
-		glewExperimental = true;
 		auto glew_err = glewInit();
 		if (glew_err != GLEW_OK) {
 			spdlog::get("logger")->error("Could not initialize GLEW. {}", glewGetErrorString(glew_err));
@@ -66,9 +65,11 @@ namespace c_plus_eight {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
+		// set screen to black
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glPixelZoom(10.0f, 10.0f);
 
+		// magnify 64x32 game graphics to fit 640x320 window
+		glPixelZoom(10.0f, 10.0f);
 		return true;
 	}
 
@@ -77,14 +78,16 @@ namespace c_plus_eight {
 		// clear framebuffer
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// update screen
+		// update pixel buffer
 		glDrawPixels(64, 32, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void *)g);
 
+		// display OpenGL buffer on screen
 		SDL_GL_SwapWindow(this->game_window);
 	}
 
 	void Renderer::quit()
 	{
+		// free SDL resources
 		SDL_DestroyWindow(this->game_window);
 		this->game_window = NULL;
 		SDL_Quit();
